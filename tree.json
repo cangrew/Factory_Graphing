@@ -1,0 +1,54 @@
+{
+    "Product": {
+        "facility": "Assembler",
+        "total_facilities_needed": 8,
+        "inputs": [
+            "Iron Ingot",
+            "Gear",
+            "Circuit Board"
+        ]
+    },
+    "Iron Ingot": {
+        "facility": "Smelter",
+        "total_facilities_needed": 128,
+        "inputs": {
+            "Iron Ore": {
+                "quantity": 1,
+                "rate": 32.0
+            }
+        }
+    },
+    "Gear": {
+        "facility": "Assembler",
+        "total_facilities_needed": 64,
+        "inputs": [
+            "Iron Ingot"
+        ]
+    },
+    "Circuit Board": {
+        "facility": "Assembler",
+        "total_facilities_needed": 16,
+        "inputs": [
+            "Iron Ingot",
+            "Copper Ingot"
+        ]
+    },
+    "Copper Ingot": {
+        "facility": "Smelter",
+        "total_facilities_needed": 16,
+        "inputs": {
+            "Copper Ore": {
+                "quantity": 1,
+                "rate": 16.0
+            }
+        }
+    },
+    "Iron Ore": {
+        "quantity": 1,
+        "rate": 32.0
+    },
+    "Copper Ore": {
+        "quantity": 1,
+        "rate": 16.0
+    }
+}
