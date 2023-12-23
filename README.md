@@ -17,8 +17,8 @@ This repository contains a Python script designed for planning and visualizing f
 To use this script, you need Python installed on your system. Clone the repository and install the required dependencies:
 
 ```bash
-git clone https://github.com/your-username/factory-planner.git
-cd factory-planner
+git clone https://github.com/cangrew/Factory_Graphing.git
+cd Factory_Graphing
 pip install -r requirements.txt
 ```
 
@@ -27,7 +27,7 @@ pip install -r requirements.txt
 To run the script, execute:
 
 ```bash
-python factory_planner.py
+python main.py
 ```
 
 You can modify the script to plan for different products or change the production rate by editing the `main()` function.
