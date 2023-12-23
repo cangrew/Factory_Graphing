@@ -1,8 +1,9 @@
 # Import necessary libraries
-import sys
+import numpy as np
 import math
 import networkx as nx
 import matplotlib.pyplot as plt
+
 import json
 
 raw_components = [
@@ -74,6 +75,34 @@ recipes_II = {
         "facility": "Refining Facility",
         "time": 4  # in seconds
     },
+    "Conveyor Belt MK.I": {
+        "inputs": { 
+            "Iron Ingot": 2,
+            "Gear": 1
+        },
+        "output": 3,
+        "facility": "Assembler",
+        "time": 1  # in seconds
+    },
+    "Conveyor Belt MK.II": {
+        "inputs": { 
+            "Conveyor Belt MK.I": 3,
+            "Electromagnetic Turbine": 1
+        },
+        "output": 3,
+        "facility": "Assembler",
+        "time": 1  # in seconds
+    },
+    "Splitter": {
+        "inputs": { 
+            "Iron Ingot": 3,
+            "Gear": 2,
+            "Circuit Board": 1
+        },
+        "output": 1,
+        "facility": "Assembler",
+        "time": 2  # in seconds
+    }
 }
 
 recipes_III = {
@@ -98,12 +127,29 @@ recipes_III = {
         "inputs": {
             "Stone": 2
         },
-        "output": {"quantity": 1},
+        "output": 1,
         "facility": "Smelter",
         "time": 2  # in seconds
     },
+    "Sorter MK.I": {
+        "inputs": {
+            "Iron Ingot": 1,
+            "Circuit Board": 1
+        },
+        "output": 1,
+        "facility": "Smelter",
+        "time": 1  # in seconds
+    },
+    "Sorter MK.II": {
+        "inputs": {
+            "Sorter MK.I": 2,
+            "Electric Motor": 1
+        },
+        "output": 2,
+        "facility": "Smelter",
+        "time": 1  # in seconds
+    }
 }
-
 recipes_IV = {
     "Circuit Board": {
         "inputs": {
@@ -124,23 +170,33 @@ recipes_IV = {
         "facility": "Assembler",
         "time": 2
     },
+    "Electric Motor": {
+        "inputs": {
+            "Iron Ingot": 2,
+            "Magnetic Coil": 1,
+            "Gear": 1,
+        },
+        "output": 1,
+        "facility": "Assembler",
+        "time": 2
+    },
 }
 
 recipes_V = {
     "Gear": {
-        "inputs": [
-            {"material": "Iron Ingot", "quantity": 1},
-        ],
-        "output": {"quantity": 1},
+        "inputs": {
+            "Iron Ingot": 1,
+        },
+        "output": 1,
         "facility": "Assembler",
         "time": 1
     },
     "Electromagnetic Turbine": {
-        "inputs": [
-            {"material": "Iron Ingot", "quantity": 1},
-            {"material": "Iron Ingot", "quantity": 1},a
-        ],
-        "output": {"quantity": 1},
+        "inputs": {
+            "Electric Motor": 2,
+            "Magnetic Coil": 2,
+        },
+        "output": 1,
         "facility": "Assembler",
         "time": 2
     },
@@ -148,20 +204,20 @@ recipes_V = {
 
 recipes_matrix = {
     "Electromagnetic Matrix": {
-        "inputs": [
-            {"material": "Magnetic Coil", "quantity": 1},
-            {"material": "Circuit Board", "quantity": 1},
-        ],
-        "output": {"quantity": 1},
+        "inputs": {
+            "Magnetic Coil": 1,
+            "Circuit Board": 1,
+        },
+        "output": 1,
         "facility": "Research Facility",
         "time": 3
     },
     "Energy Matrix": {
-        "inputs": [
-            {"material": "Plasma Refining", "quantity": 2},
-            {"material": "Energetic Graphite", "quantity": 2},
-        ],
-        "output": {"quantity": 1},
+        "inputs": {
+            "Plasma Refining": 2,
+            "Energetic Graphite": 2
+        },
+        "output": 1,
         "facility": "Research Facility",
         "time": 6
     },
@@ -171,180 +227,176 @@ recipes = recipes_II | recipes_III | recipes_IV | recipes_V | recipes_matrix
 
 
 
-def simplify_recipe(product):
-    # Base case: if the product is a raw component, return it
-    if product in raw_components:
-        return {product: 1}
+# def simplify_recipe(product):
+#     # Base case: if the product is a raw component, return it
+#     if product in raw_components:
+#         return {product: 1}
     
-    recipe = recipes.get(product)
-    if not recipe:
-        return {} 
+#     recipe = recipes.get(product)
+#     if not recipe:
+#         return {} 
     
-    simplified_recipe = {}
-    for input_item in recipe["inputs"]:
-        material = input_item["material"]
-        quantity = input_item["quantity"]
+#     simplified_recipe = {}
+#     for input_item in recipe["inputs"]:
+#         material = input_item["material"]
+#         quantity = input_item["quantity"]
 
-        if material in raw_components:
-            simplified_recipe[material] = simplified_recipe.get(material, 0) + quantity
-        else:
-            sub_recipe = simplify_recipe(material)
-            for sub_material, sub_quantity in sub_recipe.items():
-                total_quantity = sub_quantity * quantity
-                simplified_recipe[sub_material] = simplified_recipe.get(sub_material, 0) + total_quantity
+#         if material in raw_components:
+#             simplified_recipe[material] = simplified_recipe.get(material, 0) + quantity
+#         else:
+#             sub_recipe = simplify_recipe(material)
+#             for sub_material, sub_quantity in sub_recipe.items():
+#                 total_quantity = sub_quantity * quantity
+#                 simplified_recipe[sub_material] = simplified_recipe.get(sub_material, 0) + total_quantity
 
-    return simplified_recipe
+#     return simplified_recipe
 
-def simplify_all():
-    for key,_ in recipes.items():
-        recipes[key] = sorted(simplify_recipe(key))
+# def simplify_all():
+#     for key,_ in recipes.items():
+#         recipes[key] = sorted(simplify_recipe(key))
 
-def get_factory_details(product, rate=1):
-    # Check if product is in recipes
-    if product not in recipes:
-        return None
-    
-    recipe = recipes[product]
-    output_rate = recipe["output"]["quantity"]  # rate at which the product is produced per cycle
-    cycle_time = recipe["time"]  # time for one production cycle
-
-    # Calculate number of facilities required to achieve desired rate
-    facilities_needed = math.ceil(rate / (output_rate / cycle_time))
-    
-
-    # Calculate input rates
-    input_details = {}
-    for input_item in recipe["inputs"]:
-        input_material = input_item["material"]
-        input_quantity = input_item["quantity"]
-
-        # Check if the input material is a raw component or another product
-        if input_material in raw_components:
-            input_rate = rate * input_quantity / output_rate
-            input_details[input_material] = {"rate": input_rate}
-        else:
-            # Recursively get input details for the input material
-            sub_input_details = get_factory_details(input_material, rate=input_quantity * facilities_needed)
-            input_details[input_material] = sub_input_details
-
-    # Construct and return the details dictionary
-    factory_details = {
-        "facility": recipe["facility"],
-        "facilities_needed": facilities_needed,
-        "inputs": input_details
+def get_factory_details(products, rate=1):
+    factory = {
+        "Storage": {
+            "facility": "Storage",
+            "total_facilities_needed": 1,
+            "inputs": {},
+            "level": 0
+        }
     }
 
-    return factory_details
+    def do_factory_details(product, factory, min_rate, level=1):
 
-def simplify_factory(product, factory):
-    # Initialize an adjacency list to represent the graph
-    graph = {}
-
-    # Helper function to recursively process each item
-    def process_item(item, material, facilities_needed=None):
-        if material not in graph:
-            graph[material] = {'facility': item['facility'], 'total_facilities_needed': 0, 'inputs': {}}
+        recipe = recipes[product]
+        output_rate = recipe["output"]  # rate at which the product is produced per cycle
+        cycle_time = recipe["time"]  # time for one production cycle
+        output_rate_in_seconds = (output_rate / cycle_time) # rate of production per second
+        facilities_needed = math.ceil(min_rate / output_rate_in_seconds)
         
-        graph[material]['total_facilities_needed'] += facilities_needed
+        if product not in factory:
+            factory[product] = {'facility': recipe['facility'], 'total_facilities_needed': 0, 'inputs': {}}
 
-        # Process the inputs for this material
-        for input_material, input_data in item.get('inputs', {}).items():
-            # Add or update the input material in the graph
-            #if input_material not in graph[material]['inputs']:
-            if input_material not in raw_components:
-                graph[material]['inputs'][input_material] = input_data['facilities_needed']
+        factory[product]['total_facilities_needed'] += facilities_needed
+        factory[product]['level'] = level
+
+        for input_product, input_quantity in recipe["inputs"].items():
+            
+            if input_product in raw_components:
+                if input_product not in factory[product]['inputs']:
+                    factory[product]['inputs'][input_product] = 0
+                factory[product]['inputs'][input_product] += (input_quantity * facilities_needed)
+                handle_raw(input_product, factory, input_quantity * facilities_needed, level + 1)
             else:
-                if input_material not in graph[material]['inputs']:
-                    graph[material]['inputs'][input_material] = input_data['rate']
+                if input_product not in factory[product]['inputs']:
+                    factory[product]['inputs'][input_product] = {'requested': 0, 'rate': 0}
+                
+                factory[product]['inputs'][input_product]['requested'] += (input_quantity * facilities_needed)/(recipes[input_product]['output'] / recipes[input_product]['time'])
+                factory[product]['inputs'][input_product]['rate'] += (input_quantity * facilities_needed)
+                do_factory_details(input_product, factory, input_quantity * facilities_needed, level + 1)
+    
+    def handle_raw(product, factory, min_rate, level):
+        if product not in factory:
+            factory[product] = {'facility': 'Vein', 'rate': 0}
+        
+        factory[product]['rate'] += min_rate
+        factory[product]['level'] = level
+
+    for product in products:
+        factory['Storage']['inputs'][product] = {
+            'requested': 1 /(recipes[product]['output'] / recipes[product]['time']),
+            'rate': 1
+        }
+        do_factory_details(product, factory, rate)
+
+    return factory
+
+def generate_graph(factory_details):
+    # Create a directed graph
+    G = nx.DiGraph()
+
+    G.graph['root'] = next(iter(factory_details))
+
+    # Add nodes with levels
+    for node, attributes in factory_details.items():
+        if node in raw_components:
+            label = f"{node}\n({attributes['rate']*60}{'/min'})"
+        else:
+            label =  f"{node}\n({attributes['total_facilities_needed']} {attributes['facility']})"
+        G.add_node(node, label=label, level=attributes['level'])
+
+    # Add edges with weights
+    for node, attributes in factory_details.items():
+        if 'inputs' in attributes:
+            for input_node, weight in attributes['inputs'].items():
+                if isinstance(weight,dict):
+                    formated_weight = f"{weight['requested']}\n{weight['rate']*60}/m"
                 else:
-                    graph[material]['inputs'][input_material] += input_data['rate']
-
-            # Recursively process the input material
-            if input_material not in raw_components:
-                process_item(input_data, input_material, input_data['facilities_needed'])
-            else:
-                process_raw_item(input_data, input_material)
-
-    def process_raw_item(item, material):
-        if material not in graph:
-            graph[material] = {'rate': 0}
-        
-        graph[material]['rate'] += item['rate']
-
-
-    # Start processing from the top-level item
-    process_item(factory, product, factory['facilities_needed'])
-
-    return graph
-
-
-def generate_graph(factory_details, product_name, graph=None, parent=None, edge_labels=None, demand_tracker=None):
-    if graph is None:
-        graph = nx.DiGraph()
-    if edge_labels is None:
-        edge_labels = {}
-    if demand_tracker is None:
-        demand_tracker = {}
-
-    # check if node is already in graph.
-
-    if product_name in raw_components:
-        label = f"{product_name}\n({factory_details[product_name]['rate']*60} {'/min'})"
-        graph.add_node(label)
-
-        if parent:
-            # Add edge from parent to current node
-            weight = factory_details[parent.split('\n')[0]]['inputs'][product_name]
-            graph.add_edge(label, parent, weight=weight)
-        return
+                    formated_weight = f"{weight * 60}/m"
+                G.add_edge(node, input_node, weight=formated_weight)
     
-    # Add node for the current product
-    label = f"{product_name}\n({factory_details[product_name]['total_facilities_needed']} {factory_details[product_name]['facility']})"
+    return G
+
+def draw_graph(graph):
+    def create_center_aligned_layout(graph):
+        root = graph.graph["root"]
+        levels = {}
+        for node in nx.bfs_tree(graph, root):
+            level = graph.nodes[node]['level']
+            levels.setdefault(level, []).append(node)
+
+        pos = {}
+        for level, nodes in levels.items():
+            width = len(nodes)
+            for i, node in enumerate(nodes):
+                # Center aligning nodes at each level
+                pos[node] = ((i - width / 2) * 1.5, -level)
+
+        # Create a list of all edges with their data
+        edges = list(graph.edges(data=True))
+
+        # Iterate over the list and reverse each edge
+        for u, v, data in edges:
+            graph.add_edge(v, u, **data)
+            graph.remove_edge(u, v)
+
+        return pos
     
-    graph.add_node(label)
-
-    if parent:
-        # Add edge from parent to current node
-        weight = factory_details[parent.split('\n')[0]]['inputs'][product_name]
-        graph.add_edge(label, parent, weight=weight)
-
-   
-    # Iterate over inputs and recursively build graph
-    for input_material, input_data in factory_details[product_name]['inputs'].items():
-        
-        sub_product_name = input_material
-        sub_factory_details = factory_details
-        generate_graph(sub_factory_details, sub_product_name, graph, label, edge_labels, demand_tracker)
-
-    return graph, edge_labels
-
-def draw_graph(graph, edge_labels):
-    pos = nx.drawing.nx_pydot.graphviz_layout(graph, prog='circo')
+    pos = create_center_aligned_layout(graph)
+    # pos = nx.circular_layout(graph)
 
     plt.figure(figsize=(12, 12))
-    nx.draw(graph, pos, with_labels=True, node_color='skyblue', node_size=4500, font_size=10, font_weight='bold')
 
-    # Draw the edges
-    nx.draw_networkx_edges(graph, pos)
+
+    nx.draw(graph, pos, with_labels=False, node_color='skyblue', node_size=4500, font_size=10, font_weight='bold')
+
 
     # Create edge labels for weights
-    edge_weight_labels = nx.get_edge_attributes(graph, 'weight')
+    edge_labels = nx.get_edge_attributes(graph, 'weight')
+    for edge, label in edge_labels.items():
+        source, target = edge
+        x, y = pos[source]
+        dx, dy = pos[target]
+        label_pos = (x*0.6 + dx*0.4, y*0.6 + dy*0.4)
 
-    
-    nx.draw_networkx_edge_labels(graph, pos, edge_labels=edge_weight_labels, font_color='blue')
+        # Draw labels with background for better readability
+        plt.text(label_pos[0], label_pos[1], label, size=12, 
+             bbox=dict(facecolor='white', alpha=1, edgecolor='none'),
+             horizontalalignment='center', verticalalignment='center', color='blue')
+
+    for node, data in graph.nodes(data=True):
+        plt.text(pos[node][0], pos[node][1], data['label'], fontsize=9, ha='center', va='center')
+
     plt.show()
     
 # Main function
 def main():
     # Main program logic here
-    details = get_factory_details("Energy Matrix", 1/6)
+    # details = get_factory_details(["Splitter", "Conveyor Belt MK.II", "Sorter MK.II"], 1)
+    details = get_factory_details(["Copper Ingot"], 9)
     print(json.dumps(details, indent=4))
-    new_details = simplify_factory("Energy Matrix" ,details)
-    print(json.dumps(new_details, indent=4))
-    graph, edge_labels = generate_graph(new_details, "Energy Matrix")
-    draw_graph(graph, edge_labels)
-    # simplify_all()
-    # print(recipes["Processor"])
+    graph = generate_graph(details)
+    draw_graph(graph)
+    
 
 # Ensures the main function is called only when this script is executed directly
 if __name__ == "__main__":
